@@ -1,9 +1,11 @@
+import { Blog } from 'src/blogs/entities/blog.entity';
 import {
   Entity,
   PrimaryGeneratedColumn,
   Column,
   CreateDateColumn,
   UpdateDateColumn,
+  OneToMany,
 } from 'typeorm';
 
 export enum UserRole {
@@ -22,6 +24,9 @@ export class User {
 
   @Column()
   password: string;
+
+  @OneToMany(() => Blog, (blog) => blog.author)
+  blogs: Blog[];
 
   @Column({ default: UserRole.USER })
   role: UserRole;
