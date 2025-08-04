@@ -10,6 +10,8 @@ import { BlogsModule } from './blogs/blogs.module';
 import { APP_GUARD } from '@nestjs/core';
 import { RolesGuard } from './common/guards/roles.guard';
 import { JwtAuthGuard } from './auth/jwt/jwt-auth.guard';
+import { InteractionsModule } from './interactions/interactions.module';
+import { SuggestionModule } from './blogs/suggestion/suggestion.module';
 
 @Module({
   imports: [
@@ -22,6 +24,8 @@ import { JwtAuthGuard } from './auth/jwt/jwt-auth.guard';
     UsersModule,
     AuthModule,
     BlogsModule,
+    InteractionsModule,
+    SuggestionModule
   ],
   controllers: [AppController],
   providers: [

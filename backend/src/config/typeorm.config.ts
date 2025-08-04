@@ -11,5 +11,6 @@ export const typeOrmConfig = (
   password: configService.get<string>('DB_PASSWORD')!,
   database: configService.get<string>('DB_NAME')!,
   autoLoadEntities: true,
-  synchronize: true, // we have to disbale in production
+  synchronize: true,
+  // dropSchema: true,
 });

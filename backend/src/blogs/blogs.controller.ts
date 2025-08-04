@@ -30,8 +30,10 @@ export class BlogsController {
   }
 
   @Get(':id')
-  getBlog(@Param('id') id: string) {
-    return this.blogsService.findOne(id);
+  async getBlog(@Param('id') id: string) {
+    const blog = await this.blogsService.findOne(id);
+    await this.blogsService.incrementViewCount(id);
+    return blog;
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)

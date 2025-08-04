@@ -118,4 +118,8 @@ export class BlogsService {
       throw error;
     }
   }
+
+  async incrementViewCount(id: string): Promise<void> {
+    await this.blogRepository.increment({ id }, 'viewCount', 1);
+  }
 }
