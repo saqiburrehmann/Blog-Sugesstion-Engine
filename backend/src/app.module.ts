@@ -12,6 +12,7 @@ import { RolesGuard } from './common/guards/roles.guard';
 import { JwtAuthGuard } from './auth/jwt/jwt-auth.guard';
 import { InteractionsModule } from './interactions/interactions.module';
 import { SuggestionModule } from './blogs/suggestion/suggestion.module';
+import { ElasticsearchModule } from './elasticsearch/elasticsearch.module';
 
 @Module({
   imports: [
@@ -25,7 +26,8 @@ import { SuggestionModule } from './blogs/suggestion/suggestion.module';
     AuthModule,
     BlogsModule,
     InteractionsModule,
-    SuggestionModule
+    SuggestionModule,
+    ElasticsearchModule
   ],
   controllers: [AppController],
   providers: [

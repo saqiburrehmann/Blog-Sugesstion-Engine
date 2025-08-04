@@ -10,12 +10,14 @@ import { Blog } from './entities/blog.entity';
 import { CreateBlogDto } from './dtos/create-blog.dto';
 import { UpdateBlogDto } from './dtos/update-blog.dto';
 import { User } from 'src/users/entities/user.entity';
+import { ElasticsearchService } from 'src/elasticsearch/elasticsearch.service';
 
 @Injectable()
 export class BlogsService {
   constructor(
     @InjectRepository(Blog)
     private blogRepository: Repository<Blog>,
+    private elasticsearchService: ElasticsearchService,
   ) {}
 
   // Create a new blog post
@@ -26,6 +28,8 @@ export class BlogsService {
 
       const blog = this.blogRepository.create({ ...dto, author });
       const savedBlog = await this.blogRepository.save(blog);
+
+      await this.elasticsearchService.indexBlog(savedBlog);
 
       console.log('Blog created successfully:', savedBlog);
       return savedBlog;

@@ -4,6 +4,7 @@ import { DataSource } from 'typeorm';
 import { User, UserRole } from '../users/entities/user.entity';
 import { Blog } from '../blogs/entities/blog.entity';
 import { ReadingHistory } from '../interactions/entities/reading-history.entity';
+import { ElasticsearchService } from 'src/elasticsearch/elasticsearch.service';
 import { BlogView } from '../interactions/entities/view.entity';
 import * as bcrypt from 'bcrypt';
 
@@ -15,6 +16,7 @@ async function bootstrap() {
   const blogRepo = dataSource.getRepository(Blog);
   const historyRepo = dataSource.getRepository(ReadingHistory);
   const viewRepo = dataSource.getRepository(BlogView);
+  const elasticService = app.get(ElasticsearchService);
 
   // 🧹 Clear existing data
   await dataSource.query('SET FOREIGN_KEY_CHECKS=0');
@@ -51,8 +53,8 @@ async function bootstrap() {
   ]);
 
   // 📝 Blogs
-  const blogs = await blogRepo.save([
-    // 🧠 Backend-focused
+  // 📝 Blogs
+  const blogEntities = blogRepo.create([
     {
       title: 'NestJS Basics',
       content: 'Intro to NestJS',
@@ -144,6 +146,11 @@ async function bootstrap() {
       author: charlie,
     },
   ]);
+
+  const blogs = await blogRepo.save(blogEntities);
+
+  // 🔁 Index each blog into Elasticsearch
+  await Promise.all(blogs.map((blog) => elasticService.indexBlog(blog)));
 
   // 📖 Reading history
 

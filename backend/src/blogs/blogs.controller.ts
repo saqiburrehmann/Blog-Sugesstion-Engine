@@ -9,6 +9,7 @@ import {
   Patch,
   UseGuards,
   Request,
+  Query,
 } from '@nestjs/common';
 import { BlogsService } from './blogs.service';
 import { CreateBlogDto } from './dtos/create-blog.dto';
@@ -18,15 +19,25 @@ import { RolesGuard } from 'src/common/guards/roles.guard';
 import { Roles } from 'src/common/decorators/roles.decorator';
 import { UserRole } from 'src/users/entities/user.entity';
 import { Public } from 'src/common/decorators/public.decorator';
+import { ElasticsearchService } from 'src/elasticsearch/elasticsearch.service';
 
 @Controller('blogs')
 export class BlogsController {
-  constructor(private readonly blogsService: BlogsService) {}
+  constructor(
+    private readonly blogsService: BlogsService,
+    private readonly elasticsearchService: ElasticsearchService,
+  ) {}
 
   @Public()
   @Get()
   getAllBlogs() {
     return this.blogsService.findAll();
+  }
+
+  @Public()
+  @Get('search')
+  async searchBlogs(@Query('q') query: string) {
+    return this.elasticsearchService.searchBlogs(query);
   }
 
   @Get(':id')
