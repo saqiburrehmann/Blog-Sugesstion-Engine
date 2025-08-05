@@ -81,6 +81,8 @@ export class BlogsService {
 
       Object.assign(blog, dto);
       const updated = await this.blogRepository.save(blog);
+
+      await this.elasticsearchService.indexBlog(updated);
       console.log('[BLOG UPDATED]', updated);
       return updated;
     } catch (error) {

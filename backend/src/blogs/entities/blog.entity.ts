@@ -30,6 +30,9 @@ export class Blog {
   @Column({ type: 'json', nullable: true })
   tags: string[];
 
+  @Column({ nullable: true })
+  coverImageUrl: string;
+
   @ManyToOne(() => User, (user) => user.blogs, { eager: true })
   author: User;
 
