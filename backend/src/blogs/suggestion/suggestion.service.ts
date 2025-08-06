@@ -4,6 +4,7 @@ import { ReadingHistory } from 'src/interactions/entities/reading-history.entity
 import { BlogView } from 'src/interactions/entities/view.entity';
 import { Repository } from 'typeorm';
 import { Blog } from '../entities/blog.entity';
+import { SuggestedBlogDto } from 'src/auth/dto/suggested-blog.dto';
 
 @Injectable()
 export class SuggestionService {
@@ -18,7 +19,7 @@ export class SuggestionService {
 
   async getSuggestionsForUser(
     userId: string,
-  ): Promise<{ type: string; suggestions: Blog[] }> {
+  ): Promise<{ type: string; suggestions: SuggestedBlogDto[] }> {
     const recentHistory = await this.historyRepo.find({
       where: { user: { id: userId } },
       relations: ['blog'],
@@ -37,29 +38,22 @@ export class SuggestionService {
     const tagArray = Array.from(tagSet);
     const alreadyReadIds = Array.from(readBlogIds);
 
-    // Debug logs
     console.log('🧾 Reading history count:', recentHistory.length);
     console.log('🔖 Tags extracted:', tagArray);
     console.log('🛑 Already read blog IDs:', alreadyReadIds);
 
     const qb = this.blogRepo
       .createQueryBuilder('blog')
+      .leftJoinAndSelect('blog.author', 'author')
       .where('blog.status = :status', { status: 'published' });
-
-    if (tagArray.length === 0) {
-      console.log('🚫 No personalization criteria – fallback to popular');
-      const fallback = await this.getPopularBlogs();
-      return { type: 'popular', suggestions: fallback };
-    }
 
     if (tagArray.length > 0) {
       const tagConditions = tagArray
         .map((_, i) => `JSON_CONTAINS(blog.tags, :tag${i}, '$')`)
         .join(' OR ');
       qb.andWhere(`(${tagConditions})`);
-
       tagArray.forEach((tag, i) => {
-        qb.setParameter(`tag${i}`, JSON.stringify(tag)); 
+        qb.setParameter(`tag${i}`, JSON.stringify(tag));
       });
     }
 
@@ -73,10 +67,33 @@ export class SuggestionService {
     if (suggestions.length === 0) {
       console.log('🔁 No personalized suggestions – fallback to popular');
       const fallback = await this.getPopularBlogs();
-      return { type: 'popular', suggestions: fallback };
+      return {
+        type: 'popular',
+        suggestions: fallback.map((blog) => this.toDto(blog)),
+      };
     }
 
-    return { type: 'personalized', suggestions };
+    return {
+      type: 'personalized',
+      suggestions: suggestions.map((blog) => this.toDto(blog)),
+    };
+  }
+
+  private toDto(blog: Blog): SuggestedBlogDto {
+    return {
+      id: blog.id,
+      title: blog.title,
+      content: blog.content,
+      tags: blog.tags,
+      viewCount: blog.viewCount,
+      status: blog.status,
+      coverImageUrl: blog.coverImageUrl,
+      createdAt: blog.createdAt,
+      updatedAt: blog.updatedAt,
+      author: {
+        email: blog.author?.email || '',
+      },
+    };
   }
 
   async getPopularBlogs(): Promise<Blog[]> {

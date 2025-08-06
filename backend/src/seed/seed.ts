@@ -4,9 +4,18 @@ import { DataSource } from 'typeorm';
 import { User, UserRole } from '../users/entities/user.entity';
 import { Blog } from '../blogs/entities/blog.entity';
 import { ReadingHistory } from '../interactions/entities/reading-history.entity';
-import { ElasticsearchService } from 'src/elasticsearch/elasticsearch.service';
 import { BlogView } from '../interactions/entities/view.entity';
 import * as bcrypt from 'bcrypt';
+import * as dotenv from 'dotenv';
+dotenv.config();
+
+// Optional: only import ElasticsearchService if needed
+let ElasticsearchService: any;
+const enableElastic = process.env.ENABLE_ELASTIC === 'true';
+if (enableElastic) {
+  ElasticsearchService =
+    require('src/elasticsearch/elasticsearch.service').ElasticsearchService;
+}
 
 async function bootstrap() {
   const app = await NestFactory.createApplicationContext(AppModule);
@@ -16,7 +25,9 @@ async function bootstrap() {
   const blogRepo = dataSource.getRepository(Blog);
   const historyRepo = dataSource.getRepository(ReadingHistory);
   const viewRepo = dataSource.getRepository(BlogView);
-  const elasticService = app.get(ElasticsearchService);
+
+  // 👇 Only get the Elasticsearch service if enabled
+  const elasticService = enableElastic ? app.get(ElasticsearchService) : null;
 
   // 🧹 Clear existing data
   await dataSource.query('SET FOREIGN_KEY_CHECKS=0');
@@ -31,28 +42,31 @@ async function bootstrap() {
   // 👥 Users
   const [alice, bob, charlie, dave] = await userRepo.save([
     userRepo.create({
+      name: 'Alice',
       email: 'alice@example.com',
       password: hashedPassword,
       role: UserRole.USER,
     }),
     userRepo.create({
+      name: 'Bob',
       email: 'bob@example.com',
       password: hashedPassword,
       role: UserRole.USER,
     }),
     userRepo.create({
+      name: 'Charlie',
       email: 'charlie@example.com',
       password: hashedPassword,
       role: UserRole.USER,
     }),
     userRepo.create({
+      name: 'Dave',
       email: 'dave@example.com',
       password: hashedPassword,
       role: UserRole.USER,
     }),
   ]);
 
-  // 📝 Blogs
   // 📝 Blogs
   const blogEntities = blogRepo.create([
     {
@@ -83,8 +97,6 @@ async function bootstrap() {
       status: 'published',
       author: charlie,
     },
-
-    // ⚛️ Frontend-focused
     {
       title: 'React Basics',
       content: 'Hooks, JSX',
@@ -106,8 +118,6 @@ async function bootstrap() {
       status: 'published',
       author: bob,
     },
-
-    // 🗄️ Database
     {
       title: 'Database Design',
       content: 'Relational models',
@@ -122,8 +132,6 @@ async function bootstrap() {
       status: 'published',
       author: dave,
     },
-
-    // 📚 JS / General
     {
       title: 'JS Tips',
       content: 'ES6 and beyond',
@@ -149,38 +157,35 @@ async function bootstrap() {
 
   const blogs = await blogRepo.save(blogEntities);
 
-  // 🔁 Index each blog into Elasticsearch
-  await Promise.all(blogs.map((blog) => elasticService.indexBlog(blog)));
+  // 🔁 Index each blog into Elasticsearch (only if enabled)
+  if (enableElastic && elasticService) {
+    await Promise.all(blogs.map((blog) => elasticService.indexBlog(blog)));
+  }
 
   // 📖 Reading history
 
-  // Alice → NestJS + DB
   await historyRepo.save([
-    { user: alice, blog: blogs[0] }, // NestJS Basics
-    { user: alice, blog: blogs[1] }, // Advanced NestJS
-    { user: alice, blog: blogs[7] }, // Database Design
+    { user: alice, blog: blogs[0] },
+    { user: alice, blog: blogs[1] },
+    { user: alice, blog: blogs[7] },
   ]);
 
-  // Bob → React + CSS
   await historyRepo.save([
-    { user: bob, blog: blogs[4] }, // React Basics
-    { user: bob, blog: blogs[6] }, // CSS Tips
+    { user: bob, blog: blogs[4] },
+    { user: bob, blog: blogs[6] },
   ]);
 
-  // Charlie → No reading history (forces fallback to popular)
-
-  // Dave → MySQL + Security
   await historyRepo.save([
-    { user: dave, blog: blogs[7] }, // Database Design
-    { user: dave, blog: blogs[3] }, // API Security
+    { user: dave, blog: blogs[7] },
+    { user: dave, blog: blogs[3] },
   ]);
 
-  // 👁️ Views to simulate popularity
+  // 👁️ Views
   await viewRepo.save([
     { user: alice, blog: blogs[0] },
     { user: bob, blog: blogs[0] },
     { user: charlie, blog: blogs[0] },
-    { user: dave, blog: blogs[0] }, // NestJS Basics is most viewed
+    { user: dave, blog: blogs[0] },
 
     { user: alice, blog: blogs[4] },
     { user: bob, blog: blogs[4] },
@@ -203,6 +208,7 @@ async function bootstrap() {
   console.log(
     '🔹 Dave should get personalized: Indexing MySQL (not Database Design)',
   );
+
   await app.close();
 }
 

@@ -11,6 +11,7 @@ import { LoginDto } from './dto/login.dto';
 import { CreateUserDto } from 'src/users/dto/create.user.dto';
 import { UserResponseDto } from 'src/users/dto/response.user.dto';
 import { ConfigService } from '@nestjs/config';
+import { Response } from 'express';
 
 @Injectable()
 export class AuthService {
@@ -27,27 +28,18 @@ export class AuthService {
    */
   async login(
     dto: LoginDto,
+    res: Response,
   ): Promise<{
     accessToken: string;
-    refreshToken: string;
     user: UserResponseDto;
   }> {
     try {
-      this.logger.log(`Attempting login for: ${dto.email}`);
-
       const user = await this.usersService.findByEmail(dto.email);
-      if (!user) {
-        this.logger.warn(`Login failed: user not found for email ${dto.email}`);
-        throw new UnauthorizedException('Invalid credentials');
-      }
+      if (!user) throw new UnauthorizedException('Invalid credentials');
 
       const isPasswordValid = await bcrypt.compare(dto.password, user.password);
-      if (!isPasswordValid) {
-        this.logger.warn(
-          `Login failed: invalid password for email ${dto.email}`,
-        );
+      if (!isPasswordValid)
         throw new UnauthorizedException('Invalid credentials');
-      }
 
       const payload = {
         sub: user.id,
@@ -65,13 +57,24 @@ export class AuthService {
         expiresIn: this.configService.get('JWT_REFRESH_EXPIRATION'),
       });
 
-      this.logger.log(`Login successful for user ${user.email}`);
+      res.cookie('token', accessToken, {
+        httpOnly: true,
+        secure: false, // true in production
+        sameSite: 'lax',
+        maxAge: 60 * 60 * 1000,
+      });
 
-      // Remove password and return clean user object
+      res.cookie('refreshToken', refreshToken, {
+        httpOnly: true,
+        secure: false, // Set to true in production with HTTPS
+        sameSite: 'lax',
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+      });
+
       const { password, ...safeUser } = user;
       const userResponse = new UserResponseDto(safeUser);
 
-      return { accessToken, refreshToken, user: userResponse };
+      return { accessToken, user: userResponse };
     } catch (error) {
       this.logger.error(`Login error for email ${dto.email}`, error.stack);
       throw error;
@@ -98,5 +101,59 @@ export class AuthService {
       this.logger.error(`Signup error for email ${dto.email}`, error.stack);
       throw error;
     }
+  }
+
+  async refreshAccessToken(refreshToken: string, res: Response) {
+    try {
+      const payload = this.jwtService.verify(refreshToken, {
+        secret: this.configService.get('JWT_REFRESH_SECRET'),
+      });
+
+      const user = await this.usersService.findByEmail(payload.email);
+      if (!user) throw new UnauthorizedException('User not found');
+
+      const newAccessToken = this.jwtService.sign(
+        { sub: user.id, email: user.email, role: user.role },
+        {
+          secret: this.configService.get('JWT_ACCESS_SECRET'),
+          expiresIn: this.configService.get('JWT_ACCESS_EXPIRATION'),
+        },
+      );
+
+      return res.json({ accessToken: newAccessToken });
+    } catch (err) {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
+  }
+
+  async logout(res: Response) {
+    res.clearCookie('token', {
+      httpOnly: true,
+      secure: false, // true in production with HTTPS
+      sameSite: 'lax',
+    });
+
+    res.clearCookie('refreshToken', {
+      httpOnly: true,
+      secure: false, // true in production with HTTPS
+      sameSite: 'lax',
+    });
+
+    return res.status(200).json({ message: 'Logged out successfully' });
+  }
+
+  async getUserProfile(userId: string): Promise<UserResponseDto> {
+    console.log('[🧠] Fetching user profile for ID:', userId);
+
+    const user = await this.usersService.findById(userId);
+    if (!user) {
+      console.error('[❌] User not found for ID:', userId);
+      throw new UnauthorizedException('User not found');
+    }
+
+    const { password, ...safeUser } = user;
+    console.log('[✅] Returning profile for:', safeUser.email);
+
+    return new UserResponseDto(safeUser);
   }
 }
