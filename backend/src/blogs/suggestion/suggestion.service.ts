@@ -61,7 +61,7 @@ export class SuggestionService {
       qb.andWhere('blog.id NOT IN (:...readIds)', { readIds: alreadyReadIds });
     }
 
-    qb.orderBy('blog.createdAt', 'DESC').take(5);
+    qb.orderBy('blog.createdAt', 'DESC').take(20);
     const suggestions = await qb.getMany();
 
     if (suggestions.length === 0) {
@@ -106,7 +106,8 @@ export class SuggestionService {
       .addGroupBy('author.id')
       .addSelect('COUNT(view.id)', 'viewCount')
       .orderBy('viewCount', 'DESC')
-      .take(5)
+      .addOrderBy('blog.createdAt', 'DESC')
+      .take(20)
       .getMany();
   }
 }

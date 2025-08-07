@@ -9,7 +9,6 @@ import * as bcrypt from 'bcrypt';
 import * as dotenv from 'dotenv';
 dotenv.config();
 
-// Optional: only import ElasticsearchService if needed
 let ElasticsearchService: any;
 const enableElastic = process.env.ENABLE_ELASTIC === 'true';
 if (enableElastic) {
@@ -25,11 +24,8 @@ async function bootstrap() {
   const blogRepo = dataSource.getRepository(Blog);
   const historyRepo = dataSource.getRepository(ReadingHistory);
   const viewRepo = dataSource.getRepository(BlogView);
-
-  // 👇 Only get the Elasticsearch service if enabled
   const elasticService = enableElastic ? app.get(ElasticsearchService) : null;
 
-  // 🧹 Clear existing data
   await dataSource.query('SET FOREIGN_KEY_CHECKS=0');
   await viewRepo.clear();
   await historyRepo.clear();
@@ -39,7 +35,6 @@ async function bootstrap() {
 
   const hashedPassword = await bcrypt.hash('123456', 10);
 
-  // 👥 Users
   const [alice, bob, charlie, dave] = await userRepo.save([
     userRepo.create({
       name: 'Alice',
@@ -67,149 +62,90 @@ async function bootstrap() {
     }),
   ]);
 
-  // 📝 Blogs
-  const blogEntities = blogRepo.create([
-    {
-      title: 'NestJS Basics',
-      content: 'Intro to NestJS',
-      tags: ['nestjs', 'backend'],
+  const tagsList = [
+    ['nestjs', 'backend'],
+    ['nestjs', 'advanced'],
+    ['nestjs', 'performance'],
+    ['security', 'api'],
+    ['react', 'frontend'],
+    ['react', 'forms'],
+    ['css', 'frontend'],
+    ['mysql', 'db'],
+    ['mysql', 'performance'],
+    ['javascript'],
+    ['typescript', 'javascript'],
+    ['architecture', 'design'],
+    ['testing', 'jest'],
+    ['docker', 'devops'],
+    ['kubernetes'],
+    ['graphql', 'api'],
+    ['websockets', 'real-time'],
+    ['ui', 'ux'],
+    ['tailwind', 'css'],
+    ['react-native'],
+    ['nextjs', 'react'],
+    ['prisma', 'orm'],
+    ['authentication', 'security'],
+    ['oauth2', 'auth'],
+    ['caching', 'redis'],
+  ];
+
+  const blogEntities = tagsList.map((tags, i) =>
+    blogRepo.create({
+      title: `Blog #${i + 1}: ${tags.join(' & ')}`,
+      content: `This blog covers topics on ${tags.join(', ')}.`,
+      tags,
       status: 'published',
-      author: alice,
-    },
-    {
-      title: 'Advanced NestJS',
-      content: 'DI, Guards',
-      tags: ['nestjs', 'advanced'],
-      status: 'published',
-      author: alice,
-    },
-    {
-      title: 'NestJS Caching',
-      content: 'Using interceptors',
-      tags: ['nestjs', 'backend', 'performance'],
-      status: 'published',
-      author: bob,
-    },
-    {
-      title: 'API Security',
-      content: 'JWT, OAuth',
-      tags: ['security', 'api'],
-      status: 'published',
-      author: charlie,
-    },
-    {
-      title: 'React Basics',
-      content: 'Hooks, JSX',
-      tags: ['react', 'frontend'],
-      status: 'published',
-      author: bob,
-    },
-    {
-      title: 'React Forms',
-      content: 'Controlled & Uncontrolled',
-      tags: ['react', 'frontend'],
-      status: 'published',
-      author: charlie,
-    },
-    {
-      title: 'CSS Tips',
-      content: 'Grid, Flexbox',
-      tags: ['css', 'frontend'],
-      status: 'published',
-      author: bob,
-    },
-    {
-      title: 'Database Design',
-      content: 'Relational models',
-      tags: ['mysql', 'db'],
-      status: 'published',
-      author: bob,
-    },
-    {
-      title: 'Indexing MySQL',
-      content: 'BTrees, Hashing',
-      tags: ['mysql', 'performance'],
-      status: 'published',
-      author: dave,
-    },
-    {
-      title: 'JS Tips',
-      content: 'ES6 and beyond',
-      tags: ['javascript'],
-      status: 'published',
-      author: alice,
-    },
-    {
-      title: 'TS Basics',
-      content: 'Interfaces, Types',
-      tags: ['typescript', 'javascript'],
-      status: 'published',
-      author: dave,
-    },
-    {
-      title: 'Design Patterns',
-      content: 'OOP & FP',
-      tags: ['architecture', 'design'],
-      status: 'published',
-      author: charlie,
-    },
-  ]);
+      author: [alice, bob, charlie, dave][i % 4], // rotate authors
+    }),
+  );
 
   const blogs = await blogRepo.save(blogEntities);
 
-  // 🔁 Index each blog into Elasticsearch (only if enabled)
   if (enableElastic && elasticService) {
     await Promise.all(blogs.map((blog) => elasticService.indexBlog(blog)));
   }
 
-  // 📖 Reading history
-
+  // Reading history — simulate reading for personalization
   await historyRepo.save([
+    // Alice reads nestjs-related blogs
     { user: alice, blog: blogs[0] },
     { user: alice, blog: blogs[1] },
-    { user: alice, blog: blogs[7] },
-  ]);
+    { user: alice, blog: blogs[2] },
 
-  await historyRepo.save([
+    // Bob reads frontend/react
     { user: bob, blog: blogs[4] },
+    { user: bob, blog: blogs[5] },
     { user: bob, blog: blogs[6] },
-  ]);
 
-  await historyRepo.save([
+    // Dave reads MySQL and performance
     { user: dave, blog: blogs[7] },
-    { user: dave, blog: blogs[3] },
+    { user: dave, blog: blogs[8] },
+    { user: dave, blog: blogs[24] }, // caching
+
+    // Charlie reads nothing — new user
   ]);
 
-  // 👁️ Views
+  // Views — simulate popularity
   await viewRepo.save([
+    ...blogs.map((blog, idx) => ({
+      user: [alice, bob, charlie, dave][idx % 4],
+      blog,
+    })),
+    // popular boost
     { user: alice, blog: blogs[0] },
     { user: bob, blog: blogs[0] },
     { user: charlie, blog: blogs[0] },
     { user: dave, blog: blogs[0] },
-
-    { user: alice, blog: blogs[4] },
-    { user: bob, blog: blogs[4] },
-
-    { user: bob, blog: blogs[1] },
-    { user: charlie, blog: blogs[3] },
-    { user: charlie, blog: blogs[5] },
-    { user: dave, blog: blogs[8] },
   ]);
 
   console.log('\n✅ Seed complete!');
   console.log('📌 Test cases:');
-  console.log(
-    '🔹 Alice should get personalized: NestJS Caching, Indexing MySQL',
-  );
-  console.log('🔹 Bob should get personalized: React Forms');
-  console.log(
-    '🔹 Charlie should fallback to popular (NestJS Basics, React Basics, etc.)',
-  );
-  console.log(
-    '🔹 Dave should get personalized: Indexing MySQL (not Database Design)',
-  );
+  console.log('🔹 Alice → personalized: nestjs-related blogs');
+  console.log('🔹 Bob → personalized: react/frontend blogs');
+  console.log('🔹 Charlie → fallback to popular (has no reads)');
+  console.log('🔹 Dave → personalized: mysql/performance/caching');
 
   await app.close();
 }
-
 bootstrap();

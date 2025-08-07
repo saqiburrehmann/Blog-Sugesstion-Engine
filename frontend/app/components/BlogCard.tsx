@@ -1,5 +1,7 @@
 "use client";
+import axios from "axios";
 import { useRouter } from "next/navigation";
+import { api } from "../lib/api";
 
 interface Blog {
   id: string;
@@ -20,9 +22,21 @@ export default function BlogCard({
 }) {
   const router = useRouter();
 
-  const handleClick = () => {
-    if (onClick) onClick(blog.id); // console.log in parent
-    router.push(`/blogs/${blog.id}`); // navigate
+  const handleClick = async () => {
+    if (onClick) onClick(blog.id);
+
+    try {
+      await axios.post(
+        api.readingHistory,
+        { blogId: blog.id },
+        { withCredentials: true }
+      );
+      console.log("📚 Reading history recorded");
+    } catch (err) {
+      console.error("❌ Failed to record reading history", err);
+    }
+
+    router.push(`/blogs/${blog.id}`);
   };
 
   return (
