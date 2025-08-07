@@ -7,4 +7,5 @@ export const api = {
   refresh: `${BASE_URL}/auth/refresh`,
   suggestions: `${BASE_URL}/suggestions`,
   profile: `${BASE_URL}/auth/profile`,
+  blogDetail: "http://localhost:3001/blogs", 
 };

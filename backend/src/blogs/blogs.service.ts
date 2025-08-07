@@ -57,7 +57,9 @@ export class BlogsService {
   // Get a single blog by ID
   async findOne(id: string): Promise<Blog> {
     try {
-      const blog = await this.blogRepository.findOne({ where: { id } });
+      const blog = await this.blogRepository.findOne({
+        where: { id, status: 'published' },
+      });
       if (!blog) {
         console.warn('[BLOG NOT FOUND]', id);
         throw new NotFoundException('Blog not found');

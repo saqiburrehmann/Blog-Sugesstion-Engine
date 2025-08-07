@@ -24,11 +24,10 @@ export default function HeroSection({
   blogs,
   suggestionType,
 }: HeroSectionProps) {
-  const validBlogs = blogs.filter((blog) => {
-    const isValid =
-      blog && blog.id && blog.title && blog.content && Array.isArray(blog.tags);
-    return isValid;
-  });
+  const validBlogs = blogs.filter(
+    (blog) =>
+      blog && blog.id && blog.title && blog.content && Array.isArray(blog.tags)
+  );
 
   const heading =
     suggestionType === "personalized"
@@ -36,6 +35,10 @@ export default function HeroSection({
       : suggestionType === "popular"
       ? "Popular Blogs"
       : "Latest Blogs";
+
+  const handleCardClick = (id: string) => {
+    console.log("Blog Id is...", id);
+  };
 
   return (
     <section className="p-8">
@@ -46,7 +49,7 @@ export default function HeroSection({
       ) : (
         <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
           {validBlogs.map((blog) => (
-            <BlogCard key={blog.id} blog={blog} />
+            <BlogCard key={blog.id} blog={blog} onClick={handleCardClick} />
           ))}
         </div>
       )}

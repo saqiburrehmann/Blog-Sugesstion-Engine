@@ -40,6 +40,7 @@ export class BlogsController {
     return this.elasticsearchService.searchBlogs(query);
   }
 
+  @Public()
   @Get(':id')
   async getBlog(@Param('id') id: string) {
     const blog = await this.blogsService.findOne(id);
@@ -73,7 +74,8 @@ export class BlogsController {
     return this.blogsService.delete(id, req.user);
   }
 
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  // @UseGuards(JwtAuthGuard, RolesGuard)
+
   @Patch(':id/status')
   @Roles(UserRole.ADMIN)
   updateStatus(@Param('id') id: string, @Body() dto: { status: string }) {
