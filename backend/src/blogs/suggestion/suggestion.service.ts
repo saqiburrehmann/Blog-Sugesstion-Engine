@@ -17,6 +17,7 @@ export class SuggestionService {
     private historyRepo: Repository<ReadingHistory>,
   ) {}
 
+  // suggestion.service.ts
   async getSuggestionsForUser(
     userId: string,
   ): Promise<{ type: string; suggestions: SuggestedBlogDto[] }> {
@@ -64,12 +65,11 @@ export class SuggestionService {
     qb.orderBy('blog.createdAt', 'DESC').take(20);
     const suggestions = await qb.getMany();
 
+    // ❌ No fallback — just return empty if no history
     if (suggestions.length === 0) {
-      console.log('🔁 No personalized suggestions – fallback to popular');
-      const fallback = await this.getPopularBlogs();
       return {
-        type: 'popular',
-        suggestions: fallback.map((blog) => this.toDto(blog)),
+        type: 'personalized',
+        suggestions: [],
       };
     }
 

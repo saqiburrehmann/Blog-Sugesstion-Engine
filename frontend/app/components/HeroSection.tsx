@@ -1,3 +1,4 @@
+// HeroSection.tsx
 import BlogCard from "./BlogCard";
 
 interface Blog {

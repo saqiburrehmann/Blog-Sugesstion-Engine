@@ -6,7 +6,8 @@ export const api = {
   logout: `${BASE_URL}/auth/logout`,
   refresh: `${BASE_URL}/auth/refresh`,
   suggestions: `${BASE_URL}/suggestions`,
+  popular: `${BASE_URL}/suggestions/popular`,
   profile: `${BASE_URL}/auth/profile`,
-  blogDetail: "http://localhost:3001/blogs",
+  blogDetail: `${BASE_URL}/blogs`,
   readingHistory: `${BASE_URL}/interactions/history`,
 };

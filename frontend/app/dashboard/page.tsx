@@ -1,3 +1,4 @@
+// DashboardPage.tsx
 "use client";
 
 import { useEffect, useState } from "react";
@@ -22,39 +23,50 @@ interface Blog {
 }
 
 export default function DashboardPage() {
-  const [blogs, setBlogs] = useState<Blog[]>([]);
-  const [type, setType] = useState<string>("");
+  const [suggestedBlogs, setSuggestedBlogs] = useState<Blog[]>([]);
+  const [popularBlogs, setPopularBlogs] = useState<Blog[]>([]);
 
   useEffect(() => {
-    const fetchSuggestedBlogs = async () => {
+    const fetchBlogs = async () => {
       try {
-        const res = await fetch(api.suggestions, {
+        // Suggested
+        const resSuggestions = await fetch(api.suggestions, {
           method: "GET",
           credentials: "include",
         });
+        if (resSuggestions.ok) {
+          const data = await resSuggestions.json();
+          setSuggestedBlogs(data.suggestions);
+        }
 
-        if (res.ok) {
-          const data = await res.json();
-          setBlogs(data.suggestions);
-          setType(data.type);
-        } else {
-          console.error("Failed to fetch suggestions");
+        // Popular
+        const resPopular = await fetch(`${api.suggestions}/popular`, {
+          method: "GET",
+        });
+        if (resPopular.ok) {
+          const data = await resPopular.json();
+          setPopularBlogs(data.blogs);
         }
       } catch (err) {
-        console.error("Error fetching suggestions", err);
+        console.error("Error fetching blogs:", err);
       }
     };
 
-    fetchSuggestedBlogs();
+    fetchBlogs();
   }, []);
 
   return (
     <div className="flex flex-col min-h-screen">
       <Navbar />
 
-      {/* 👇 main section takes remaining space */}
       <main className="flex-grow bg-gray-950 text-white">
-        <HeroSection blogs={blogs} suggestionType={type} />
+        {/* Suggested blogs only if available */}
+        {suggestedBlogs.length > 0 && (
+          <HeroSection blogs={suggestedBlogs} suggestionType="personalized" />
+        )}
+
+        {/* Always show popular */}
+        <HeroSection blogs={popularBlogs} suggestionType="popular" />
       </main>
 
       <Footer />
