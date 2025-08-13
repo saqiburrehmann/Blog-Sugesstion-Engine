@@ -2,6 +2,7 @@ import { api } from "@/app/lib/api";
 import { cookies } from "next/headers";
 import Navbar from "@/app/components/Navbar";
 import Footer from "@/app/components/Footer";
+import Markdown from "react-markdown";
 
 export const dynamic = "force-dynamic";
 
@@ -68,7 +69,7 @@ export default async function BlogDetailPage({
             By <span className="text-white">{blog.author.email}</span>
           </p>
           <article className="text-slate-200 leading-relaxed whitespace-pre-line text-lg mb-8">
-            {blog.content}
+            <Markdown>{blog.content}</Markdown> 
           </article>
           <div className="flex flex-wrap gap-2">
             {blog.tags.map((tag, idx) => (

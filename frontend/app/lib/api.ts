@@ -10,4 +10,5 @@ export const api = {
   profile: `${BASE_URL}/auth/profile`,
   blogDetail: `${BASE_URL}/blogs`,
   readingHistory: `${BASE_URL}/interactions/history`,
+  blogGenerate: `${BASE_URL}/blogs/generate`,
 };

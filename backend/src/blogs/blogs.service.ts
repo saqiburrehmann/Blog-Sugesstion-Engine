@@ -10,6 +10,7 @@ import { Blog } from './entities/blog.entity';
 import { CreateBlogDto } from './dtos/create-blog.dto';
 import { UpdateBlogDto } from './dtos/update-blog.dto';
 import { User } from 'src/users/entities/user.entity';
+import { generateBlogContent } from 'src/common/utils/groqcloud';
 
 @Injectable()
 export class BlogsService {
@@ -23,6 +24,11 @@ export class BlogsService {
     try {
       console.log('Blog Create DTO:', dto);
       console.log('Blog Author:', author);
+
+      // Generate content if not provided
+      if (!dto.content && dto.title) {
+        dto.content = await generateBlogContent(dto.title);
+      }
 
       const blog = this.blogRepository.create({ ...dto, author });
       const savedBlog = await this.blogRepository.save(blog);
@@ -110,7 +116,7 @@ export class BlogsService {
     status: 'draft' | 'published' | 'unpublished',
   ): Promise<Blog> {
     try {
-      const blog = await this.findByIdAdmin(id); 
+      const blog = await this.findByIdAdmin(id);
       blog.status = status;
       const updated = await this.blogRepository.save(blog);
       console.log('[STATUS UPDATED]', updated);

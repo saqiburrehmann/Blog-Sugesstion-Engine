@@ -10,6 +10,7 @@ import {
   UseGuards,
   Request,
   Query,
+  BadRequestException,
 } from '@nestjs/common';
 import { BlogsService } from './blogs.service';
 import { CreateBlogDto } from './dtos/create-blog.dto';
@@ -19,6 +20,7 @@ import { RolesGuard } from 'src/common/guards/roles.guard';
 import { Roles } from 'src/common/decorators/roles.decorator';
 import { UserRole } from 'src/users/entities/user.entity';
 import { Public } from 'src/common/decorators/public.decorator';
+import { generateBlogContent } from 'src/common/utils/groqcloud';
 
 @Controller('blogs')
 export class BlogsController {
@@ -35,6 +37,18 @@ export class BlogsController {
   @Get('admin/all')
   getAllBlogsAdmin() {
     return this.blogsService.findAllAdmin();
+  }
+
+  // blogs.controller.ts
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Post('generate')
+  @Roles(UserRole.USER, UserRole.ADMIN)
+  async generateBlog(@Body() dto: { title: string }) {
+    if (!dto.title) {
+      throw new BadRequestException('Title is required to generate blog');
+    }
+    const content = await generateBlogContent(dto.title);
+    return { content };
   }
 
   @Public()

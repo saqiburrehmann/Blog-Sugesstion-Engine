@@ -8,6 +8,7 @@ export default function CreateBlogPage() {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [tags, setTags] = useState("");
+  const [useAI, setUseAI] = useState(false); // NEW
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -28,7 +29,7 @@ export default function CreateBlogPage() {
         },
         body: JSON.stringify({
           title,
-          content,
+          content: useAI ? "" : content, // leave empty if AI should generate
           tags: tags
             .split(",")
             .map((t) => t.trim())
@@ -45,6 +46,38 @@ export default function CreateBlogPage() {
       setTitle("");
       setContent("");
       setTags("");
+      setUseAI(false);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGenerate = async () => {
+    if (!title.trim()) {
+      setError("Please enter a title first");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await fetch(api.blogGenerate, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ title }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || "Failed to generate blog");
+      }
+
+      const data = await res.json();
+      setContent(data.content);
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -59,7 +92,7 @@ export default function CreateBlogPage() {
       <form onSubmit={handleSubmit} className="space-y-6">
         <div>
           <label htmlFor="title" className="block font-semibold mb-1">
-            Title
+            Topic / Title
           </label>
           <input
             id="title"
@@ -68,24 +101,45 @@ export default function CreateBlogPage() {
             onChange={(e) => setTitle(e.target.value)}
             required
             className="w-full border border-gray-300 rounded px-3 py-2"
-            placeholder="Enter blog title"
+            placeholder="Enter blog title or topic"
           />
         </div>
 
-        <div>
-          <label htmlFor="content" className="block font-semibold mb-1">
-            Content
-          </label>
-          <textarea
-            id="content"
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            required
-            rows={8}
-            className="w-full border border-gray-300 rounded px-3 py-2"
-            placeholder="Write your blog content here..."
+        <div className="flex items-center gap-2">
+          <input
+            id="useAI"
+            type="checkbox"
+            checked={useAI}
+            onChange={() => setUseAI(!useAI)}
           />
+          <label htmlFor="useAI" className="text-sm">
+            Don’t want to write? Let AI write it for you.
+          </label>
         </div>
+
+        {useAI && (
+          <div>
+            <button
+              type="button"
+              onClick={handleGenerate}
+              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+              disabled={loading}
+            >
+              {loading ? "Generating..." : "Generate Blog with AI"}
+            </button>
+
+            {content && (
+              <textarea
+                id="content"
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                rows={8}
+                className="w-full border border-gray-300 rounded px-3 py-2 mt-3"
+                placeholder="Your AI-generated blog will appear here..."
+              />
+            )}
+          </div>
+        )}
 
         <div>
           <label htmlFor="tags" className="block font-semibold mb-1">
