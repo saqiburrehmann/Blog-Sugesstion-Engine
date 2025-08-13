@@ -28,14 +28,14 @@ export async function middleware(request: NextRequest) {
 
     if (!token) {
       console.warn("[Middleware] No token found. Redirecting to /login");
-      return NextResponse.redirect(new URL("/login", request.url));
+      return NextResponse.redirect(new URL("/pages/login", request.url));
     }
 
     const payload = await verifyToken(token);
 
     if (!payload) {
       console.warn("[Middleware] Invalid token. Redirecting to /login");
-      return NextResponse.redirect(new URL("/login", request.url));
+      return NextResponse.redirect(new URL("/pages/login", request.url));
     }
 
     console.log("[Middleware] Access granted to protected route:", pathname);

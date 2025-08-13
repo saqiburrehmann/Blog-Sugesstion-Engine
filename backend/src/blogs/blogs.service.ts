@@ -10,14 +10,12 @@ import { Blog } from './entities/blog.entity';
 import { CreateBlogDto } from './dtos/create-blog.dto';
 import { UpdateBlogDto } from './dtos/update-blog.dto';
 import { User } from 'src/users/entities/user.entity';
-import { ElasticsearchService } from 'src/elasticsearch/elasticsearch.service';
 
 @Injectable()
 export class BlogsService {
   constructor(
     @InjectRepository(Blog)
     private blogRepository: Repository<Blog>,
-    private elasticsearchService: ElasticsearchService,
   ) {}
 
   // Create a new blog post
@@ -28,8 +26,6 @@ export class BlogsService {
 
       const blog = this.blogRepository.create({ ...dto, author });
       const savedBlog = await this.blogRepository.save(blog);
-
-      await this.elasticsearchService.indexBlog(savedBlog);
 
       console.log('Blog created successfully:', savedBlog);
       return savedBlog;
@@ -84,7 +80,6 @@ export class BlogsService {
       Object.assign(blog, dto);
       const updated = await this.blogRepository.save(blog);
 
-      await this.elasticsearchService.indexBlog(updated);
       console.log('[BLOG UPDATED]', updated);
       return updated;
     } catch (error) {
@@ -110,13 +105,12 @@ export class BlogsService {
     }
   }
 
-  // Update blog status (admin only)
   async updateStatus(
     id: string,
     status: 'draft' | 'published' | 'unpublished',
   ): Promise<Blog> {
     try {
-      const blog = await this.findOne(id);
+      const blog = await this.findByIdAdmin(id); 
       blog.status = status;
       const updated = await this.blogRepository.save(blog);
       console.log('[STATUS UPDATED]', updated);
@@ -129,5 +123,28 @@ export class BlogsService {
 
   async incrementViewCount(id: string): Promise<void> {
     await this.blogRepository.increment({ id }, 'viewCount', 1);
+  }
+
+  async findAllAdmin(): Promise<Blog[]> {
+    try {
+      const blogs = await this.blogRepository.find({
+        order: { createdAt: 'DESC' },
+        relations: ['author'],
+      });
+      console.log('[ADMIN FIND ALL BLOGS]', blogs.length);
+      return blogs;
+    } catch (error) {
+      console.error('[ADMIN FIND ALL BLOGS ERROR]', error);
+      throw new InternalServerErrorException('Failed to retrieve blogs');
+    }
+  }
+
+  async findByIdAdmin(id: string): Promise<Blog> {
+    const blog = await this.blogRepository.findOne({
+      where: { id },
+      relations: ['author'],
+    });
+    if (!blog) throw new NotFoundException('Blog not found');
+    return blog;
   }
 }

@@ -19,14 +19,10 @@ import { RolesGuard } from 'src/common/guards/roles.guard';
 import { Roles } from 'src/common/decorators/roles.decorator';
 import { UserRole } from 'src/users/entities/user.entity';
 import { Public } from 'src/common/decorators/public.decorator';
-import { ElasticsearchService } from 'src/elasticsearch/elasticsearch.service';
 
 @Controller('blogs')
 export class BlogsController {
-  constructor(
-    private readonly blogsService: BlogsService,
-    private readonly elasticsearchService: ElasticsearchService,
-  ) {}
+  constructor(private readonly blogsService: BlogsService) {}
 
   @Public()
   @Get()
@@ -34,10 +30,11 @@ export class BlogsController {
     return this.blogsService.findAll();
   }
 
-  @Public()
-  @Get('search')
-  async searchBlogs(@Query('q') query: string) {
-    return this.elasticsearchService.searchBlogs(query);
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @Get('admin/all')
+  getAllBlogsAdmin() {
+    return this.blogsService.findAllAdmin();
   }
 
   @Public()
@@ -73,8 +70,6 @@ export class BlogsController {
   deleteBlog(@Param('id') id: string, @Request() req) {
     return this.blogsService.delete(id, req.user);
   }
-
-  // @UseGuards(JwtAuthGuard, RolesGuard)
 
   @Patch(':id/status')
   @Roles(UserRole.ADMIN)

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { api } from "../lib/api";
+import { api } from "../../lib/api";
 import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
@@ -35,7 +35,7 @@ export default function LoginPage() {
       // console.log("Access Token:", data.accessToken);
 
       setTimeout(() => {
-        router.push("/dashboard");
+        router.push("/");
       }, 1000);
     } catch (err: any) {
       setError(err.message);
@@ -98,7 +98,7 @@ export default function LoginPage() {
 
         <p className="text-gray-400 text-sm mt-6 text-center">
           Don't have an account?{" "}
-          <Link href="/signup" className="text-blue-400 hover:underline">
+          <Link href="/pages/signup" className="text-blue-400 hover:underline">
             Sign up
           </Link>
         </p>

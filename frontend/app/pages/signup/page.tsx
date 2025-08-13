@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { api } from "../lib/api";
+import { api } from "../../lib/api";
 import { useRouter } from "next/navigation";
 
 export default function SignupPage() {
@@ -30,7 +30,7 @@ export default function SignupPage() {
       setError("");
 
       setTimeout(() => {
-        router.push("/login");
+        router.push("/pages/login");
       }, 1000);
     } catch (err: any) {
       setError(err.message);
@@ -93,7 +93,7 @@ export default function SignupPage() {
 
         <p className="text-gray-400 text-sm mt-6 text-center">
           Already have an account?{" "}
-          <Link href="/login" className="text-blue-400 hover:underline">
+          <Link href="/pages/login" className="text-blue-400 hover:underline">
             Log in
           </Link>
         </p>

@@ -37,6 +37,12 @@ async function bootstrap() {
 
   const [alice, bob, charlie, dave] = await userRepo.save([
     userRepo.create({
+      name: 'Admin',
+      email: 'admin@gmail.com',
+      password: hashedPassword,
+      role: UserRole.ADMIN,
+    }),
+    userRepo.create({
       name: 'Alice',
       email: 'alice@example.com',
       password: hashedPassword,
@@ -96,7 +102,7 @@ async function bootstrap() {
       content: `This blog covers topics on ${tags.join(', ')}.`,
       tags,
       status: 'published',
-      author: [alice, bob, charlie, dave][i % 4], // rotate authors
+      author: [alice, bob, charlie, dave][i % 4],
     }),
   );
 
